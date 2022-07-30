@@ -14,10 +14,6 @@
   },
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/programming-hero-web-course1/manufacturer-website-server-side-Kamruzzamannaim/issues"
-  },
-  "homepage": "https://github.com/programming-hero-web-course1/manufacturer-website-server-side-Kamruzzamannaim#readme",
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.0.1",
