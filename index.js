@@ -1,14 +1,17 @@
 const express = require("express");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 require("dotenv").config();
+
+const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
 
 // middleware
 const app = express();
-const cors = require("cors");
-const { ObjectID } = require("bson");
 app.use(cors());
+
+const { ObjectID } = require("bson");
+
 app.use(express.json());
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
@@ -50,6 +53,9 @@ async function run() {
     const userDataCollection = client
       .db("drill_manufacturer")
       .collection("userData");
+    const userMessageCollection = client
+      .db("drill_manufacturer")
+      .collection("userMessage");
 
     //verify admin
     const verifyAdmin = async (req, res, next) => {
@@ -64,12 +70,20 @@ async function run() {
       }
     };
 
-    //   tools
-    app.get("/tools", async (req, res) => {
-      const query = {};
-      const tools = await toolCollection.find(query).toArray();
-      res.send(tools);
-    });
+    // user message
+
+app.get("/usersMessages",verifyJWT,verifyAdmin,async(req,res)=>{
+  const result= await userMessageCollection.find({}).toArray();
+  res.send(result);
+})
+
+    app.post("/contact",async(req,res)=>{
+      const userMessage=req.body;
+      const result=await userMessageCollection.insertOne(userMessage);
+      res.send(result);
+    })
+
+   
 
     app.get("/tool/:id", async (req, res) => {
       const id = req.params.id;
@@ -78,12 +92,39 @@ async function run() {
       res.send(tool);
     });
 
+// admin post tools api
+
+app.post("/tools",verifyJWT,verifyAdmin,async(req,res)=>{
+  const tool=req.body;
+  const result= await toolCollection.insertOne(tool)
+  res.send(result);
+})
+
+
+ // admin get all tools  tools
+ app.get("/tools", async (req, res) => {
+  const query = {};
+  const tools = await toolCollection.find(query).toArray();
+  res.send(tools);
+});
+// admin delete an tool 
+app.delete("/tool/:id",verifyJWT,verifyAdmin,async(req,res)=>{
+  const id=req.params.id;
+  const filter={_id:ObjectID(id)}
+  const result= await toolCollection.deleteOne(filter);
+  res.send(result)
+})
+
+
+
     // orders
     app.post("/order", async (req, res) => {
       const order = req.body;
       const result = await orderCollection.insertOne(order);
       res.send(result);
     });
+
+    // a user get their orders
     app.get("/order", verifyJWT, async (req, res) => {
       const email = req.query.email;
       const decodedEmail = req.decoded.email;
@@ -95,6 +136,12 @@ async function run() {
         return res.status(403).send({ message: "forbidden access" });
       }
     });
+// admin get all users orders
+app.get("/orders",verifyJWT,verifyAdmin,async(req,res)=>{
+  const result= await orderCollection.find({}).toArray()
+  res.send(result)
+})
+
     app.get("/singleorder/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectID(id) };
@@ -215,6 +262,7 @@ async function run() {
       res.send(updatedDoc);
     });
   } finally {
+
   }
 }
 
